@@ -3,6 +3,7 @@
   (:require [goog.object :as gobj]
             [mandel-canvas.arithmetic.vector :refer [mul add magnitude]]
             mandel-canvas.algorithm.sequential-vector
+            mandel-canvas.algorithm.async-vector
             mandel-canvas.coloring.pink
             mandel-canvas.coloring.quick))
 
@@ -16,9 +17,13 @@
     canvas-elem))
 
 (defn do-render
-  [{:keys [width height render-fn color-opts]
-    :or {width 50
-         height 50
+  [{:keys [width height render-fn color-opts min-x max-x min-y max-y]
+    :or {width 500
+         height 500
+         min-x -1.0
+         max-x -0.5
+         min-y -0.5
+         max-y  0.0
          render-fn mandel-canvas.algorithm.sequential-vector/render
          color-opts mandel-canvas.coloring.pink/opts}}]
   (let [_ (doto canvas-elem
@@ -29,6 +34,7 @@
             (gobj/set "mozImageSmoothingEnabled" false)
             (gobj/set "webkitImageSmoothingEnabled" false)
             (gobj/set "fillStyle" "#888")
+            #_
             (.fillRect 0 0 (.-width canvas-elem) (.-height canvas-elem)))]
     (println "Done" (gobj/get render-fn "name")
       (time
@@ -36,7 +42,11 @@
           (assoc color-opts
             :width  width
             :height height
+            :min-x min-x
+            :max-x max-x
+            :min-y min-y
+            :max-y max-y
             :rendering-context ctx))))))
 
 (do-render
- {})
+ {:render-fn mandel-canvas.algorithm.async-vector/render-async})

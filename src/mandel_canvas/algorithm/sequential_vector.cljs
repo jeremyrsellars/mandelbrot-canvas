@@ -3,12 +3,8 @@
             [mandel-canvas.arithmetic.vector :as av]))
 
 (defn render
-  [{:keys [max-iter color-fn width height rendering-context]}]
-  (let [min-x -1.0
-        max-x -0.5
-        min-y -0.5
-        max-y  0.0
-        x-width (- max-x min-x)
+  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y]}]
+  (let [x-width (- max-x min-x)
         y-width (- max-y min-y)]
     (doseq [pixel-x (range width)
             pixel-y (range height)
