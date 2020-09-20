@@ -26,7 +26,8 @@
          max-y  0.0
          render-fn mandel-canvas.algorithm.sequential-vector/render
          color-opts mandel-canvas.coloring.pink/opts}}]
-  (let [_ (doto canvas-elem
+  (let [started (js/Date.)
+        _ (doto canvas-elem
             (gobj/set "height" height)
             (gobj/set "width" width))
         ctx
@@ -46,7 +47,10 @@
             :max-x max-x
             :min-y min-y
             :max-y max-y
-            :rendering-context ctx))))))
+            :rendering-context ctx)
+          (fn done []
+            (println "Started:" started ". Completed:" (js/Date.)
+              "Elapsed:" (/ (- (js/Date.) started) 1000) "seconds")))))))
 
 (do-render
- {:render-fn mandel-canvas.algorithm.async-vector/render-async})
+ {:render-fn mandel-canvas.algorithm.async-vector/render-progressive-async})
