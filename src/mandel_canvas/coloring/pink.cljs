@@ -1,16 +1,21 @@
 (ns mandel-canvas.coloring.pink)
 
-(def max-iter 255)
+(def max-iter 60)
+
+(defn- rgb
+  [r g b]
+  (str "rgb(" (int (min 255 (max 0 r)))
+          "," (int (min 255 (max 0 g)))
+          "," (int (min 255 (max 0 b)))
+          ")"))
 
 (def color-table
-  (mapv
-    #(if (= max-iter %)
-      "black"
-      (str "rgb(" (- 255 %)
-              "," (int (* 16 (mod % 16)))
-              "," (- 255 %)))
-    (range (inc max-iter))))
+    (mapv
+      #(rgb (- 255 %)
+            (min (- 255 %) (- 255 (+ 16 (* 7 (mod % 16)))))
+            (- 255 %))
+      (range (inc max-iter))))
 
 (def opts
-  {:max-iter max-iter
-   :color-fn color-table})
+  {:max-iter (count color-table)
+   :color-fn (fn [iter](nth color-table iter "black"))})

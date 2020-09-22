@@ -14,3 +14,7 @@
 (def opts
   {:max-iter max-iter
    :color-fn color-table})
+
+(def binary
+  {:max-iter 20
+   :color-fn (fn [iter] (if (even? iter) "black" "#ccc"))})
