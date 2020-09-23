@@ -7,6 +7,7 @@
             mandel-canvas.algorithm.sequential-vector
             mandel-canvas.algorithm.async-vector
             mandel-canvas.algorithm.color-scheme
+            mandel-canvas.algorithm.progressive-vectorized
             mandel-canvas.coloring.pink
             mandel-canvas.coloring.pink-green
             mandel-canvas.coloring.quick))
@@ -14,6 +15,7 @@
 (defonce state-ref
   (atom
     (assoc mandel-canvas.coloring.pink/opts
+      :render-fn mandel-canvas.algorithm.progressive-vectorized/render-async
       :width  500
       :height 500
       :min-x -2
