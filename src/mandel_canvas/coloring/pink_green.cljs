@@ -7,8 +7,8 @@
           "," (int (min 255 (max 0 b)))
           ")"))
 
-(def color-table
-  (let [blend-over 200]
+(let [blend-over 200]
+  (def color-table
     (-> []
       (into
         (map
@@ -22,11 +22,13 @@
                  (min (- 255 %) (* 8 (mod % 16)))
                  (- 255 %))
           (range blend-over)))
-      (conj "black"))))
+      (conj "black")))
 
-(def opts
-  {:max-iter (dec (count color-table))
-   :color-fn color-table})
+  (def opts
+    (let [max-iter (dec (count color-table))]
+      {:max-iter max-iter
+       :iter-steps (butlast (range blend-over max-iter blend-over)) ; because black is 1 step away
+       :color-fn (fn [iter](nth color-table iter "black"))})))
 
 
 ; (println (map vector (range) color-table))

@@ -18,4 +18,5 @@
 
 (def opts
   {:max-iter (count color-table)
+   :iter-steps (range 32 max-iter 32)
    :color-fn (fn [iter](nth color-table iter "black"))})

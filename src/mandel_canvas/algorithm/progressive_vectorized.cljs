@@ -50,12 +50,19 @@
 
 
 (defn render-async
-  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y]} done]
+  [{:keys [max-iter iter-steps color-fn width height rendering-context min-x max-x min-y max-y]}
+   done]
   (let [job (js/Object.)
         _ (reset! rendering-job job)
         continue? (fn continue? [] (identical? job @rendering-job))
 
-        chunk-iterations (int (/ max-iter 3.4))
+        max-iter (or max-iter 13)
+        iter-steps (or iter-steps
+                       (let [chunk-iterations (int (max 1 (/ max-iter 3.4)))]
+                         (->> (cons max-iter (range chunk-iterations max-iter chunk-iterations))
+                              distinct
+                              (sort-by identity)
+                              (into []))))
 
         min-r min-x
         min-i min-y
@@ -115,8 +122,8 @@
                 (.fillRect rendering-context pixel-r pixel-i 1 1)))))
           next-chunk
             (fn next-chunk
-              [iteration-count]
-              (let [iteration-count (min iteration-count max-iter)]
+              [[iteration-count :as iter-steps] max-iter]
+              (let [iteration-count (min (or iteration-count max-iter) max-iter)]
                 (cond (not (continue?))
                       (println "Aborting old job")
 
@@ -126,25 +133,29 @@
 
                         ; do chunk work
                         (when (seq chunk)
+                          ;(println "rendering chunk" (count chunk) "pixels" "up-to" iteration-count "iterations")
                           (render-chunk chunk iteration-count))
+                          ;(println "done rendering chunk"))
 
                         ; schedule more work
                         (cond (seq new-chunks)
-                              (js/setTimeout #(next-chunk iteration-count) 0)
+                              (js/setTimeout #(next-chunk iter-steps max-iter) 0)
 
                               (<= max-iter iteration-count)
                               (println "Done with async" iteration-count "iterations"
                                 (done))
 
                               (seq @unexploded-indexes)
-                              (let [deeper-iteration-count (+ iteration-count chunk-iterations)]
-                                (println "Going deeper" deeper-iteration-count)
-                                (reset! chunks-in-process (partition-all 100 (seq @unexploded-indexes)))
-                                (js/setTimeout #(next-chunk deeper-iteration-count) 0))
+                              (let [next-iter-steps (or (next iter-steps)
+                                                        (println "ran out of next-iter-steps")
+                                                        [max-iter])]
+                                (println "Going deeper" next-iter-steps "then" (count next-iter-steps) "steps remaining")
+                                (reset! chunks-in-process (partition-all 1000 (shuffle (seq @unexploded-indexes))))
+                                (js/setTimeout #(next-chunk next-iter-steps max-iter) 0))
 
                               :all-exploded
                               (println "Done with async -- everything exploded" iteration-count "iterations"
                                 (done)))))))]
 
 
-      (next-chunk (/ chunk-iterations 2)))))
+      (next-chunk (cons 0 iter-steps) max-iter)))) ; first one is dropped
