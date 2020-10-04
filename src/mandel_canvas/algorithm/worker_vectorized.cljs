@@ -64,6 +64,19 @@
             {:display-message  (partial butler/bring! :display-message)
              :downstream-error (partial butler/bring! :downstream-error)
              :paint            #(apply pv/paint-to-context rendering-context color-fn %)
+             :paint-chunk      (fn paint-chunk [{chunk-buffer :chunk}]
+                                (let [^js/Float64Array chunk (js/Float64Array. chunk-buffer)]
+                                  (butler/bring! :display-message (str "Painting chunk count=" (.-length chunk)))
+                                  (loop [idx 0]
+                                    (when (< idx (.-length chunk))
+                                      (let [color-iter (aget chunk (+ idx 0))
+                                            pixel-r (aget chunk (+ idx 1))
+                                            pixel-i (aget chunk (+ idx 2))
+                                            pixel-r-width (aget chunk (+ idx 3))
+                                            pixel-i-width (aget chunk (+ idx 4))]
+                                        ;(butler/bring! :display-message (str {:color-iter color-iter, :pixel-r pixel-r, :pixel-i pixel-i}))
+                                        (pv/paint-to-context rendering-context color-fn color-iter pixel-r pixel-i pixel-r-width pixel-i-width)
+                                        (recur (+ 5 idx)))))))
              :done             (partial butler/bring! :done)})]
     (gevt/listen worker EventType/ERROR (partial butler/bring! :downstream-error))
     (butler/bring! :display-message
@@ -88,23 +101,23 @@
         :min-x min-x
         :max-x max-x
         :min-y min-y
-        :max-y max-y}}))
-  #_
-  (pv/render-async
-    (-> (merge mandel-canvas.coloring.pink-orange-blue/opts opts)
-        (assoc :rendering-context (.getContext offscreen "2d")
-               :log #(butler/bring! :display-message %&)))
-    #(butler/bring! :done %)))
+        :max-y max-y}})))
 
 (defmethod mandel-canvas.worker.common/render-in-worker ::partition
   [_ {:keys [opts]}]
   (butler/bring! :display-message (str "butler: Starting " ::partition))
-  (pv/render-async
-    (assoc opts :rendering-context nil
-                :log #(butler/bring! :display-message %&)
-                :paint-fn (fn pixel-complete [rendering-context color-fn color-iter pixel-r pixel-i pixel-r-width pixel-i-width]
-                            (butler/bring! :paint [color-iter pixel-r pixel-i pixel-r-width pixel-i-width])))
-    #(butler/bring! :done %)))
+  (let [chunk-ref (atom [])]
+    (pv/render-async
+      (assoc opts :rendering-context nil
+                  :log #(butler/bring! :display-message %&)
+                  :paint-fn (fn pixel-complete [rendering-context color-fn color-iter pixel-r pixel-i pixel-r-width pixel-i-width]
+                              ;(butler/bring! :paint [color-iter pixel-r pixel-i pixel-r-width pixel-i-width])
+                              (swap! chunk-ref conj color-iter pixel-r pixel-i pixel-r-width pixel-i-width)))
+      #(butler/bring! :done %)
+      #(let [[chunk _] (swap-vals! chunk-ref empty)]
+        (butler/bring! :paint-chunk
+         {:chunk (.-buffer (js/Float64Array. chunk))}
+         [[:chunk]])))))
 
 ;   (butler/bring! :display-message (str "butler: Starting " ::partition))
 ;   (pv/render-async

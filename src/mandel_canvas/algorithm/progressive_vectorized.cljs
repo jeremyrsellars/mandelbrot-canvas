@@ -53,8 +53,10 @@
 (defn render-async
   [{:keys [max-iter iter-steps rendering-context color-fn width height min-x max-x min-y max-y log paint-fn]
     :or {:paint-fn paint-to-context}}
-   done]
+   done
+   chunk-complete]
   (let [done (or done (fn [& args]))
+        chunk-complete (or chunk-complete (fn [& args]))
         job (js/Object.)
         _ (reset! rendering-job job)
         continue? (fn continue? [] (identical? job @rendering-job))
@@ -135,8 +137,9 @@
                         ; do chunk work
                         (when (seq chunk)
                           ;(log "rendering chunk" (count chunk) "pixels" "up-to" iteration-count "iterations")
-                          (render-chunk chunk iteration-count))
+                          (render-chunk chunk iteration-count)
                           ;(log "done rendering chunk"))
+                          (chunk-complete))
 
                         ; schedule more work
                         (cond (seq new-chunks)
