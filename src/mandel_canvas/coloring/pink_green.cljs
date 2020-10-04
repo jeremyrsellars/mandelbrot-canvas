@@ -1,4 +1,5 @@
-(ns mandel-canvas.coloring.pink-green)
+(ns mandel-canvas.coloring.pink-green
+  (:require mandel-canvas.coloring.common))
 
 (defn- rgb
   [r g b]
@@ -30,5 +31,6 @@
        :iter-steps (butlast (range blend-over max-iter blend-over)) ; because black is 1 step away
        :color-fn (fn [iter](nth color-table iter "black"))})))
 
-
-; (println (map vector (range) color-table))
+(defmethod mandel-canvas.coloring.common/color-scheme ::scheme
+  [_]
+  opts)

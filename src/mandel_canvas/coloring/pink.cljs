@@ -1,4 +1,5 @@
-(ns mandel-canvas.coloring.pink)
+(ns mandel-canvas.coloring.pink
+  (:require mandel-canvas.coloring.common))
 
 (def max-iter 60)
 
@@ -20,3 +21,7 @@
   {:max-iter (count color-table)
    :iter-steps (range 32 max-iter 32)
    :color-fn (fn [iter](nth color-table iter "black"))})
+
+(defmethod mandel-canvas.coloring.common/color-scheme ::scheme
+  [_]
+  opts)

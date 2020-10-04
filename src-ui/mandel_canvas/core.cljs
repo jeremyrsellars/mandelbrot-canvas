@@ -12,14 +12,12 @@
             mandel-canvas.algorithm.color-scheme
             mandel-canvas.algorithm.progressive-vectorized
             mandel-canvas.algorithm.worker-vectorized
-            mandel-canvas.coloring.pink
-            mandel-canvas.coloring.pink-green
-            mandel-canvas.coloring.pink-orange-blue
-            mandel-canvas.coloring.quick))
+            mandel-canvas.coloring.schemes))
 
 (defonce state-ref
   (atom
-    (assoc mandel-canvas.coloring.pink-orange-blue/opts
+    (hash-map
+      :scheme-key :mandel-canvas.coloring.pink-orange-blue/scheme
       :render-fn mandel-canvas.algorithm.progressive-vectorized/render-async
       ;:context-init-fn mandel-canvas.algorithm.onscreen/init-onscreen-2d-context
       :log println
@@ -96,7 +94,7 @@
     caption-elem))
 
 (defn do-render
-  [{:keys [width height render-fn color-opts min-x max-x min-y max-y context-init-fn]
+  [{:keys [width height render-fn scheme-key min-x max-x min-y max-y context-init-fn]
     :or {width  500
          height 500
          min-x -1.0
@@ -104,10 +102,10 @@
          min-y -0.5
          max-y  0.0
          render-fn mandel-canvas.algorithm.async-vector/render-progressive-async
-         context-init-fn mandel-canvas.algorithm.onscreen/init-onscreen-2d-context
-         color-opts mandel-canvas.coloring.pink/opts}
+         context-init-fn mandel-canvas.algorithm.onscreen/init-onscreen-2d-context}
     :as opts}]
   (let [started (js/Date.)
+        color-opts (mandel-canvas.coloring.common/color-scheme scheme-key)
         canvas-elem (replace-canvas-elem)
         _ (doto canvas-elem
             (gobj/set "height" height)
@@ -169,4 +167,3 @@
   (add-watch state-ref :re-render (fn [_key _ref old-value new-value] (do-render new-value)))
   (add-watch cursor-ref :re-render (fn [_key _ref old-value new-value] (do-render-cursor new-value)))
   (do-render @state-ref)))
-

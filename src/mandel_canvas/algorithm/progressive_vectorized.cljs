@@ -45,9 +45,14 @@
 (def rendering-job
   (atom nil))
 
+(defn paint-to-context
+  [rendering-context color-fn color-iter pixel-r pixel-i pixel-r-width pixel-i-width]
+  (gobj/set rendering-context "fillStyle" (color-fn color-iter))
+  (.fillRect rendering-context pixel-r pixel-i (or pixel-r-width 1) (or pixel-i-width 1)))
 
 (defn render-async
-  [{:keys [max-iter iter-steps color-fn width height rendering-context min-x max-x min-y max-y log]}
+  [{:keys [max-iter iter-steps rendering-context color-fn width height min-x max-x min-y max-y log paint-fn]
+    :or {:paint-fn paint-to-context}}
    done]
   (let [done (or done (fn [& args]))
         job (js/Object.)
@@ -115,9 +120,7 @@
                 #_
                 (when (> (- iteration-count 10) iter-so-far)
                   (log idx [pixel-r pixel-i] iter-so-far max-iter color-iter))
-                (gobj/set rendering-context "fillStyle"
-                  (color-fn color-iter))
-                (.fillRect rendering-context pixel-r pixel-i 1 1)))))
+                (paint-fn rendering-context color-fn color-iter pixel-r pixel-i 1 1)))))
           next-chunk
             (fn next-chunk
               [[iteration-count :as iter-steps] max-iter]
