@@ -3,7 +3,7 @@
             [mandel-canvas.arithmetic.vector :as av]))
 
 (defn render
-  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y]}]
+  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y log]}]
   (let [x-width (- max-x min-x)
         y-width (- max-y min-y)]
     (doseq [pixel-x (range width)
@@ -22,6 +22,6 @@
                                 :iterate
                                 (recur (inc iter)
                                        (av/add c (av/mul z z)))))]]
-      ;(println [pixel-x pixel-y] [x y] iter)
+      ;(log [pixel-x pixel-y] [x y] iter)
       (gobj/set rendering-context "fillStyle" (color-fn iter))
       (.fillRect rendering-context pixel-x pixel-y 1 1))))

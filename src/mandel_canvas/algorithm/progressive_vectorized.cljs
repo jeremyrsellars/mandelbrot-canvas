@@ -22,14 +22,11 @@
   [idx Zr Zi Cr Ci Ziter iteration-count]
   (let [cr         (aget Cr idx)
         ci         (aget Ci idx)]
-    ; (println "C" cr ci "@" idx)
-    ;(js/console.log "idx" idx "Zr" Zr "Zi" Zi "Cr" Cr "Ci" Ci "Ziter" Ziter "iteration-count" iteration-count)
     (loop [zr   (aget Zr    idx)
            zi   (aget Zi    idx)
            iter (aget Ziter idx)]
       (let [magnitude-squared (+ (* zr zr) (* zi zi))
             exploded? (> magnitude-squared 4.0)]
-        ;(println zr zi "@" iter "||" magnitude-squared exploded?)
         (if (or exploded? (>= iter iteration-count))
           ; done
           (do (aset Zr    idx zr)
@@ -50,9 +47,10 @@
 
 
 (defn render-async
-  [{:keys [max-iter iter-steps color-fn width height rendering-context min-x max-x min-y max-y]}
+  [{:keys [max-iter iter-steps color-fn width height rendering-context min-x max-x min-y max-y log]}
    done]
-  (let [job (js/Object.)
+  (let [done (or done (fn [& args]))
+        job (js/Object.)
         _ (reset! rendering-job job)
         continue? (fn continue? [] (identical? job @rendering-job))
 
@@ -116,7 +114,7 @@
                                   iter-so-far)]
                 #_
                 (when (> (- iteration-count 10) iter-so-far)
-                  (println idx [pixel-r pixel-i] iter-so-far max-iter color-iter))
+                  (log idx [pixel-r pixel-i] iter-so-far max-iter color-iter))
                 (gobj/set rendering-context "fillStyle"
                   (color-fn color-iter))
                 (.fillRect rendering-context pixel-r pixel-i 1 1)))))
@@ -125,7 +123,7 @@
               [[iteration-count :as iter-steps] max-iter]
               (let [iteration-count (min (or iteration-count max-iter) max-iter)]
                 (cond (not (continue?))
-                      (println "Aborting old job")
+                      (log "Aborting old job")
 
                       :more-to-do
                       (let [[old new-chunks] (swap-vals! chunks-in-process rest)
@@ -133,28 +131,28 @@
 
                         ; do chunk work
                         (when (seq chunk)
-                          ;(println "rendering chunk" (count chunk) "pixels" "up-to" iteration-count "iterations")
+                          ;(log "rendering chunk" (count chunk) "pixels" "up-to" iteration-count "iterations")
                           (render-chunk chunk iteration-count))
-                          ;(println "done rendering chunk"))
+                          ;(log "done rendering chunk"))
 
                         ; schedule more work
                         (cond (seq new-chunks)
                               (js/setTimeout #(next-chunk iter-steps max-iter) 0)
 
                               (<= max-iter iteration-count)
-                              (println "Done with async" iteration-count "iterations"
+                              (log "Done with async" iteration-count "iterations"
                                 (done))
 
                               (seq @unexploded-indexes)
                               (let [next-iter-steps (or (next iter-steps)
-                                                        (println "ran out of next-iter-steps")
+                                                        (log "ran out of next-iter-steps")
                                                         [max-iter])]
-                                (println "Going deeper" next-iter-steps "then" (count next-iter-steps) "steps remaining")
+                                #_(log "Going deeper" next-iter-steps "then" (count next-iter-steps) "steps remaining")
                                 (reset! chunks-in-process (partition-all 1000 (shuffle (seq @unexploded-indexes))))
                                 (js/setTimeout #(next-chunk next-iter-steps max-iter) 0))
 
                               :all-exploded
-                              (println "Done with async -- everything exploded" iteration-count "iterations"
+                              (log "Done with async -- everything exploded" iteration-count "iterations"
                                 (done)))))))]
 
 

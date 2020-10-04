@@ -1,6 +1,9 @@
 {:deps {org.clojure/clojure {:mvn/version "1.9.0"}
         org.clojure/clojurescript {:mvn/version "1.10.773"}
-        com.bhauman/figwheel-main {:mvn/version "0.2.11"}}
-        ; com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}}
+        com.bhauman/figwheel-main {:mvn/version "0.2.11"}
+        butler {:mvn/version "0.2.0"}
+        com.cognitect/transit-cljs {:mvn/version "0.8.264"}}
+
  :aliases {:fig {:main-opts ["-m" "figwheel.main"]}}
- :paths ["src" "resources" "target"]}
+
+ :paths ["src" "src-ui" "src-worker" "resources" "target"]}

@@ -3,7 +3,7 @@
             [mandel-canvas.arithmetic.vector :as av]))
 
 (defn render-async
-  [{:keys [max-iter color-fn width height rendering-context]}]
+  [{:keys [max-iter color-fn width height rendering-context log]}]
   (let [remaining-chunks
           (->>
             (for [pixel-x (range width)
@@ -21,7 +21,7 @@
                           y (/ pixel-y height)
                           mag (/ (av/magnitude [x y]) (js/Math.sqrt 2))
                           iter (* mag max-iter)]]
-              ;(println [pixel-x pixel-y] [x y] iter)
+              ;(log [pixel-x pixel-y] [x y] iter)
               (gobj/set rendering-context "fillStyle" (color-fn (int iter)))
               (.fillRect rendering-context pixel-x pixel-y 1 1)))
 
@@ -33,5 +33,5 @@
               (render-chunk chunk)
               (if (seq new)
                 (js/setTimeout next-chunk 0)
-                (println "Done with async!"))))]
+                (log "Done with async!"))))]
     (next-chunk)))

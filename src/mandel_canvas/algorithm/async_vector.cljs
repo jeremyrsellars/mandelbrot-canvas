@@ -3,7 +3,7 @@
             [mandel-canvas.arithmetic.vector :as av]))
 
 (defn render-async
-  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y]}]
+  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y log]}]
   (let [x-width (- max-x min-x)
         y-width (- max-y min-y)
         remaining-chunks
@@ -34,7 +34,7 @@
                                         (recur (inc iter)
                                                (av/add c (av/mul z z)))))]]
 
-              ;(println [pixel-x pixel-y] [x y] iter)
+              ;(log [pixel-x pixel-y] [x y] iter)
               (gobj/set rendering-context "fillStyle" (color-fn iter))
               (.fillRect rendering-context pixel-x pixel-y 1 1)))
 
@@ -46,7 +46,7 @@
               (render-chunk chunk)
               (if (seq new)
                 (js/setTimeout next-chunk 0)
-                (println "Done with async!"))))]
+                (log "Done with async!"))))]
     (next-chunk)))
 
 (defn halvesish
@@ -61,16 +61,10 @@
     [block]
     (let [width-span-widths  (halvesish pixel-width)
           height-span-widths (halvesish pixel-height)
-          ;_ (println :width-span-widths width-span-widths)
-          ;_ (println :height-span-widths height-span-widths)
           x-starts (reductions + pixel-x width-span-widths)
           y-starts (reductions + pixel-y height-span-widths)
-          ;_ (println :x-starts x-starts)
-          ;_ (println :x-starts y-starts)
           width-spans  (map vector x-starts width-span-widths)
           height-spans (map vector y-starts height-span-widths)]
-      ;(println :width-spans)
-      ;(println :width-spans width-spans :height-spans height-spans)
       (for [[x width] width-spans
             [y height] height-spans]
         [x y width height]))))
@@ -84,7 +78,7 @@
   (atom nil))
 
 (defn render-progressive-async
-  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y]} done]
+  [{:keys [max-iter color-fn width height rendering-context min-x max-x min-y max-y log]} done]
   (let [whole-block [0 0 width height]
         job (js/Object.)
         _ (reset! rendering-job job)
@@ -111,7 +105,6 @@
                                         (recur (inc iter)
                                                (av/add c (av/mul z z)))))]]
 
-              ;(println [pixel-x pixel-y] [x y] iter)
               (gobj/set rendering-context "fillStyle" (color-fn iter))
               (.fillRect rendering-context pixel-x pixel-y pixel-width pixel-height)))
 
@@ -129,12 +122,12 @@
                           (into [] remaining)
                           chunk))]
               (cond (not (identical? job @rendering-job))
-                    (println "Aborting old job")
+                    (log "Aborting old job")
 
                     (seq new)
                     (js/setTimeout next-chunk 0)
 
                     :done!
-                    (do (println "Done with async!")
+                    (do (log "Done with async!")
                         (when done (done))))))]
     (next-chunk)))

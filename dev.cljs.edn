@@ -1,2 +1,4 @@
-^{:css-dirs ["resources/public/css"]}
+^{:css-dirs ["resources/public/css"]
+  :extra-main-files {:worker {:main mandel-canvas.worker
+                              :target :webworker}}}
 {:main mandel-canvas.core}

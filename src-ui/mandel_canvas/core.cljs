@@ -3,11 +3,15 @@
   (:require [goog.events :as gevt]
             [goog.events.EventType :as EventType]
             [goog.object :as gobj]
+            [butler.core :as butler]
+            mandel-canvas.worker ; to see if this is required to make the worker load correctly
             [mandel-canvas.arithmetic.vector :refer [mul add magnitude]]
+            mandel-canvas.algorithm.onscreen
             mandel-canvas.algorithm.sequential-vector
             mandel-canvas.algorithm.async-vector
             mandel-canvas.algorithm.color-scheme
             mandel-canvas.algorithm.progressive-vectorized
+            mandel-canvas.algorithm.worker-vectorized
             mandel-canvas.coloring.pink
             mandel-canvas.coloring.pink-green
             mandel-canvas.coloring.pink-orange-blue
@@ -17,23 +21,18 @@
   (atom
     (assoc mandel-canvas.coloring.pink-orange-blue/opts
       :render-fn mandel-canvas.algorithm.progressive-vectorized/render-async
+      ;:context-init-fn mandel-canvas.algorithm.onscreen/init-onscreen-2d-context
+      :log println
       :width  500
       :height 500
       :min-x -2
       :max-x 2
       :min-y -2
       :max-y 2)))
-#_
-(reset! state-ref
-  (assoc mandel-canvas.coloring.pink/opts
-    :render-fn mandel-canvas.algorithm.color-scheme/render-async
-    :width  500
-    :height 500
-    :min-x 0
-    :max-x 500
-    :min-y 0
-    :max-y 500))
 
+(swap! state-ref assoc
+  :render-fn mandel-canvas.algorithm.worker-vectorized/render-async
+  :context-init-fn mandel-canvas.algorithm.worker-vectorized/init-offscreen-2d-context)
 
 (defonce cursor-ref
   (atom {:x nil :y nil}))
@@ -71,15 +70,20 @@
      :y (.-offsetY evt)}))
 
 (defonce app-elem (.getElementById js/document "app"))
-(defonce canvas-elem
+(defonce canvas-elem-ref (atom nil))
+(defn replace-canvas-elem
+  []
   (let [canvas-elem
         (doto (.createElement js/document "canvas")
           (gevt/listen EventType/WHEEL on-wheel)
           (gevt/listen EventType/MOUSEMOVE on-mousemove)
           (gobj/set "height" 100)
           (gobj/set "width" 100))]
-    (.appendChild app-elem canvas-elem)
-    canvas-elem))
+    (let [[old-canvas-elem _] (swap-vals! canvas-elem-ref (fn [_] canvas-elem))]
+      (when old-canvas-elem
+        (.removeChild app-elem old-canvas-elem))
+      (.appendChild app-elem canvas-elem)
+      canvas-elem)))
 
 (defonce cursor-elem
   (let [cursor-elem (.createElement js/document "div")]
@@ -92,7 +96,7 @@
     caption-elem))
 
 (defn do-render
-  [{:keys [width height render-fn color-opts min-x max-x min-y max-y]
+  [{:keys [width height render-fn color-opts min-x max-x min-y max-y context-init-fn]
     :or {width  500
          height 500
          min-x -1.0
@@ -100,22 +104,19 @@
          min-y -0.5
          max-y  0.0
          render-fn mandel-canvas.algorithm.async-vector/render-progressive-async
+         context-init-fn mandel-canvas.algorithm.onscreen/init-onscreen-2d-context
          color-opts mandel-canvas.coloring.pink/opts}
     :as opts}]
   (let [started (js/Date.)
+        canvas-elem (replace-canvas-elem)
         _ (doto canvas-elem
             (gobj/set "height" height)
             (gobj/set "width" width))
+
+        #_#_
         _ (doto caption-elem
             (gobj/set "height" height)
             (gobj/set "width" width))
-        ctx
-          (doto (.getContext canvas-elem "2d")
-            (gobj/set "mozImageSmoothingEnabled" false)
-            (gobj/set "webkitImageSmoothingEnabled" false)
-            (gobj/set "fillStyle" "#888")
-            #_
-            (.fillRect 0 0 (.-width canvas-elem) (.-height canvas-elem)))
         opts (assoc opts
                 :width      width
                 :height     height
@@ -124,8 +125,8 @@
                 :min-y      min-y
                 :max-y      max-y
                 :render-fn  render-fn
-                :color-opts color-opts
-                :rendering-context ctx)]
+                :color-opts color-opts)
+        opts (assoc opts :rendering-context (context-init-fn canvas-elem))]
 
     (gobj/set caption-elem "innerHTML"
       (str "<table>"
