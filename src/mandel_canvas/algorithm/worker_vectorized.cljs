@@ -27,10 +27,19 @@
           fy-width (/ (* y-width fheight) height)
           sy-width (- y-width fy-width)]
       (for [x [{:pixel-x-offset    pixel-x-offset          :width fwidth   :min-x min-x                                :max-x (+ min-x fx-width)}
-               {:pixel-x-offset (+ pixel-x-offset fwidth)  :width swidth   :min-x (+ min-x fx-width (/ x-width width)) :max-x max-x}]
+               {:pixel-x-offset (+ pixel-x-offset fwidth)  :width swidth   :min-x (+ min-x fx-width #_(/ x-width width)) :max-x max-x}]
             y [{:pixel-y-offset    pixel-y-offset          :height fheight :min-y min-y                                :max-y (+ min-y fy-width)}
-               {:pixel-y-offset (+ pixel-y-offset fheight) :height sheight :min-y (+ min-y fy-width (/ y-width width)) :max-y max-y}]]
+               {:pixel-y-offset (+ pixel-y-offset fheight) :height sheight :min-y (+ min-y fy-width #_(/ y-width width)) :max-y max-y}]]
         (merge x y)))))
+
+(defn split-into-cells
+ ([whole](split-into-cells whole (.-hardwareConcurrency js/navigator)))
+ ([whole max-split]
+  (loop [cells [whole]]
+    (if (>= (count cells) max-split)
+      cells
+      (recur (mapcat quadrants cells))))))
+
 
 (defn init-offscreen-2d-context
   [canvas-elem
@@ -89,7 +98,7 @@
     (doseq [{:keys [pixel-x-offset pixel-y-offset]
              :or {pixel-x-offset 0, pixel-y-offset 0}
              :as section}
-            (quadrants
+            (split-into-cells
               {:width  width
                :height height
                :min-x min-x
