@@ -14,6 +14,13 @@
             mandel-canvas.algorithm.worker-vectorized
             mandel-canvas.coloring.schemes))
 
+(defonce cancel-ref (atom (constantly false)))
+
+(defn cancel!
+  []
+  (reset! cancel-ref (constantly false)))
+
+
 (defonce state-ref
   (atom
     (hash-map
@@ -143,12 +150,16 @@
                              "<span>" max-x "</span> (" (- max-x min-x) "), <br>"
            "<em>Y:</em> "    "<span>" min-y "</span> to "
                              "<span>" max-y "</span> (" (- max-y min-y) ")"))
-    (println "Done" (gobj/get render-fn "name")
-        (render-fn
-          opts
-          (fn done []
-            (println "Started:" started ". Completed:" (js/Date.)
-              "Elapsed:" (/ (- (js/Date.) started) 1000) "seconds"))))))
+    (let [result
+          (render-fn
+            opts
+            (fn done []
+              (println "Started:" started ". Completed:" (js/Date.)
+                "Elapsed:" (/ (- (js/Date.) started) 1000) "seconds")))]
+      (if (fn? result)
+        (reset! cancel-ref result)
+        (cancel!))
+      (println "Done" (gobj/get render-fn "name")))))
 
 (defn do-render-cursor
   [{pixel-x :x, pixel-y :y}]
@@ -164,6 +175,7 @@
 
 (defonce _startup_render
  (do
+  (add-watch cancel-ref :re-render (fn [_key _ref old-value new-value] (old-value)))
   (add-watch state-ref :re-render (fn [_key _ref old-value new-value] (do-render new-value)))
   (add-watch cursor-ref :re-render (fn [_key _ref old-value new-value] (do-render-cursor new-value)))
   (do-render @state-ref)))
